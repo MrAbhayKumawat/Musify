@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import  { useState, useEffect, useRef } from "react";
 import "./Musify.scss";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
-
+import { useNavigate } from "react-router-dom";
 function Musify(props) {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState();
   const [currentSongIndex, setCurrentSongIndex] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [token, setAccessToken] = useState(null);
   const audioRef = useRef();
+  const navigate = useNavigate();
 
   const clientId = "37c8b9df55cc45479d109473d0e36b62";
   const clientSecret = "21f4b6ad19394a24a3f03e3f0bf3995d";
@@ -41,9 +42,9 @@ function Musify(props) {
   }, []);
 
   useEffect(() => {
-    if (token && props.searchQuery) {
+    // if (token && props.searchQuery) {
       fetchdata();
-    }
+ 
   }, [token, props.searchQuery]);
 
   const stopCurrentSong = () => {
@@ -59,7 +60,7 @@ function Musify(props) {
 
     try {
       const result = await fetch(
-        `https://api.spotify.com/v1/search?q=${props.searchQuery}&type=track&limit=50`,
+        `https://api.spotify.com/v1/search?q=${props.searchQuery}&type=track&limit=30`,
         {
           method: "GET",
           headers: {
@@ -69,8 +70,12 @@ function Musify(props) {
       );
 
       if (result.ok) {
-        const data = await result.json();
-        setData(data.tracks.items);
+        const datass = await result.json();
+        setTimeout(() => {
+          setData(datass.tracks.items);
+
+          
+        }, 1000);
       } else {
         console.error("Failed to fetch data from Spotify API.");
       }
@@ -122,11 +127,15 @@ function Musify(props) {
   };
 
   const handleDocumentClick = (event) => {
+    console.log("Clicked element:", event.target);
+
     if (
       musicPlayerRef.current &&
       !musicPlayerRef.current.contains(event.target) &&
-      isPlaying
+      !event.target.tagName.toLowerCase().match(/input|textarea/)
     ) {
+      // Pause the audio only if the clicked element is not an input or textarea
+      console.log("Pausing audio");
       audioRef.current.pause();
       setIsPlaying(false);
     }
@@ -141,57 +150,77 @@ function Musify(props) {
   }, [isPlaying]);
 
   return (
-    <div ref={musicPlayerRef} className="music-player">
-      {data.map((element, index) => (
-        <div
-          className="card"
-          style={{
-            width: "18rem",
-            background: "black",
-            color: "rgb(203, 191, 191)",
-          }}
-          key={element.id}
-        >
-          <img
-            src={element.album.images[0].url}
-            alt="Song-img"
-            className="card-img-top"
-          />
-          <div className="card-body">
-            <h5 className="card-title">{element.name}</h5>
-            <p className="card-text">
-              Artist: <span>{element.artists[0].name}</span>
-            </p>
-
-            <button onClick={() => togglePlay(index)}>
-              {currentSongIndex === index && isPlaying ? (
-                <span>
-                  Pause <PauseIcon style={{ fontSize: "1.8rem" }} />
-                </span>
+    <>
+    {data ? (
+      <div ref={musicPlayerRef} className="music-player">
+        {data.map((element, index) => (
+          <div
+            className="card"
+            style={{
+              width: "20rem",
+              padding: "0.8%",
+              background: "#212529",
+              color: "rgb(203, 191, 191)",
+            }}
+            key={element.id}
+          >
+            <img
+              src={element.album.images[0].url}
+              alt="Song-img"
+              style={{ cursor: "pointer" }}
+              className="card-img-top"
+              onClick={() => {
+                navigate("/singleitem", { state: { id: element.id } });
+                +
+              }}
+            />
+            <div className="card-body">
+              <h5 className="card-title">{element.name}</h5>
+              <p className="card-text">
+                Artist: <span>{element.artists[0].name}</span>
+              </p>
+  
+              <button onClick={() => togglePlay(index)}>
+                {currentSongIndex === index && isPlaying ? (
+                  <span>
+                    Pause <PauseIcon style={{ fontSize: "1.8rem" }} />
+                  </span>
+                ) : (
+                  <span>
+                    Play <PlayArrowIcon style={{ fontSize: "1.8rem" }} />
+                  </span>
+                )}
+              </button>
+              <br />
+              <br />
+              {element.preview_url ? (
+                <a
+                  href={element.preview_url}
+                  download="text-song"
+                  rel="noopener noreferrer"
+                >
+                  <button type="button">Download</button>
+                </a>
               ) : (
-                <span>
-                  Play <PlayArrowIcon style={{ fontSize: "1.8rem" }} />
-                </span>
+                <p> This song is not available for download! </p>
               )}
-            </button>
-            <br />
-            <br />
-            {element.preview_url ? (
-              <a
-                href={element.preview_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <button>Download</button>
-              </a>
-            ) : (
-              <p> This song is not available! </p>
-            )}
+            </div>
           </div>
-        </div>
-      ))}
-      <audio ref={audioRef} />
-    </div>
+        ))}
+        <audio ref={audioRef} />
+      </div>
+    ) : (
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",height:"70vh"}}>
+            <div className="loading-wave">
+        <div className="loading-bar"></div>
+        <div className="loading-bar"></div>
+        <div className="loading-bar"></div>
+        <div className="loading-bar"></div>
+      </div>
+      </div>
+    )}
+  </>
+  
   );
 }
 
