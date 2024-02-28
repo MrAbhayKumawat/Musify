@@ -171,7 +171,7 @@ function Musify(props) {
               className="card-img-top"
               onClick={() => {
                 navigate("/singleitem", { state: { id: element.id } });
-                +
+                
               }}
             />
             <div className="card-body">
